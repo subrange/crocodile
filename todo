@@ -1,0 +1,19 @@
+croc is going to be
+
+- vars: idents like x, result
+- assignments: var = expression;
+- types: int/bool inferred from suffix
+
+no functions, control flow, blocks, pointers, arrays, etc.
+
+5i, true, false
++, -, *, /, <, >, ==, &&, ||
+(x + y) * z
+
+the lex should create
+
+{ TOKEN_INT_LITERAL, "5i", 1, 0 }
+
+generate C
+
+
