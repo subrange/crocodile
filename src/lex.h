@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include "types.h"
 
 enum token_type {
@@ -26,7 +27,7 @@ enum token_type {
 
 struct token {
   token_type type;
-  std::string lex;
+  std::string_view lex;
   u32 line;
   u32 column;
 };

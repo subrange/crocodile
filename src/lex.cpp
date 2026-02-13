@@ -28,11 +28,24 @@ void read_source()
     }
 
     if (std::isdigit(c)) {
-      // todo: int 
+      usize start_pos = pos;
+
+      while (pos + 1 < sv.length() && std::isdigit(sv[pos+1])) {
+        pos++;
+        col++;
+      }
+
+      // do the same for token assign 
+      while (pos + 1 < sv.length() && sv[pos + 1] == 'i') {
+        pos++;
+        col++;
+      }
+
+      t.push_back({TOKEN_INT_LITERAL, sv.substr(start_pos, pos - start_pos + 1), line, col});
     }
 
     switch (c) {
-    case ';': t.push_back({TOKEN_SEMICOLON, ";", line, col}); break;
+    case ';': t.push_back({TOKEN_SEMICOLON, sv.substr(pos, 1), line, col}); break;
     case '+': t.push_back({TOKEN_PLUS, "+", line, col}); break;
     case '(': t.push_back({TOKEN_LPAREN, "(", line, col}); break;
     case ')': t.push_back({TOKEN_RPAREN, ")", line, col}); break;

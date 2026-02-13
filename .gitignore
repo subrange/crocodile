@@ -1,2 +1,4 @@
 .o
 bin/
+src/macros.h
+src/debug.h
