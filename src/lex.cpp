@@ -6,62 +6,141 @@
 #include "lex.h"
 #include "types.h"
 
-const std::string source = "5i + 6i;";
+const std::string source = "5i == 5i;";
+
 
 void read_source()
 {
   std::vector<token> t;
-  u32 line = 1, col = 0;
+
+  // line: vertical line #
+  // col: char offset (reset each newline)
+  // pos: 0 based, never resets, from start of file
+  u32 line = 1, col = 1;
 
   std::string_view sv = source;
-  
-  for (usize pos = 0; pos < sv.length(); ++pos) {
-    char c = sv[pos];
-    col++;
+  usize pos = 0;
 
-    if (std::isspace(c)) {
-      if (c == '\n') {
+  auto advance = [&]() {
+    if (pos < sv.length()) {
+      if (sv[pos] == '\n') {
         line++;
-        col = 0;
+        col = 1;
+      } else {
+        col++;
       }
+      pos++;
+    }
+  };
+
+  while (pos < sv.length()) {
+    char c = sv[pos];
+
+    // whitespace
+    if (std::isspace(c)) {
+      advance();
       continue;
     }
 
+    // integer literal (e.g. 5i)
     if (std::isdigit(c)) {
       usize start_pos = pos;
+      u32 start_line = line;
+      u32 start_col = col;
 
-      while (pos + 1 < sv.length() && std::isdigit(sv[pos+1])) {
-        pos++;
-        col++;
-      }
+      while (pos < sv.length() && std::isdigit(sv[pos]))
+        advance();
 
-      // do the same for token assign 
-      while (pos + 1 < sv.length() && sv[pos + 1] == 'i') {
-        pos++;
-        col++;
-      }
+      while (pos < sv.length() && sv[pos] == 'i')
+        advance();
 
-      t.push_back({TOKEN_INT_LITERAL, sv.substr(start_pos, pos - start_pos + 1), line, col});
+      t.push_back({TOKEN_INT_LITERAL, sv.substr(start_pos, pos - start_pos),
+          start_line, start_col});
+
+      continue;
     }
 
+    // todo: BOOL
+    u32 start_col = col;
+    u32 start_line = line;
+    // more manual with advance() but more control
     switch (c) {
-    case ';': t.push_back({TOKEN_SEMICOLON, sv.substr(pos, 1), line, col}); break;
-    case '+': t.push_back({TOKEN_PLUS, "+", line, col}); break;
-    case '(': t.push_back({TOKEN_LPAREN, "(", line, col}); break;
-    case ')': t.push_back({TOKEN_RPAREN, ")", line, col}); break;
-    case '-': t.push_back({TOKEN_MINUS, "-", line, col}); break;
-    case '*': t.push_back({TOKEN_STAR, "+", line, col}); break;
-    case '>': t.push_back({TOKEN_GT, ">", line, col}); break;
-    case '<': t.push_back({TOKEN_LT, "<", line, col}); break;
+    case ';':
+      advance();
+      t.push_back({TOKEN_SEMICOLON, ";", start_line, start_col});
+      break;
+    case '+':
+      advance();
+      t.push_back({TOKEN_PLUS, "+", start_line, start_col});
+      break;
+    case '(':
+      advance();
+      t.push_back({TOKEN_LPAREN, "(", start_line, start_col});
+      break;
+    case ')':
+      advance();
+      t.push_back({TOKEN_RPAREN, ")", start_line, start_col});
+      break;
+    case '-':
+      advance();
+      t.push_back({TOKEN_MINUS, "-", start_line, start_col});
+      break;
+    case '*':
+      advance();
+      t.push_back({TOKEN_STAR, "*", start_line, start_col});
+      break;
+    case '>':
+      advance();
+      t.push_back({TOKEN_GT, ">", start_line, start_col});
+      break;
+    case '<':
+      advance();
+      t.push_back({TOKEN_LT, "<", start_line, start_col});
+      break;
+    case '&':
+      advance(); // first &
+      if (pos < sv.length() && sv[pos] == '&') {
+        advance(); // second &&
+        t.push_back({TOKEN_AND, "&&", start_line, start_col});
+      }
+      break;
+    case '|':
+      advance();
+      if (pos < sv.length() && sv[pos] == '|') {
+        advance();
+        t.push_back({TOKEN_OR, "||", start_line, start_col});
+      }
+      break;
     case '=':
-      // todo: look forward for another equal
-      //TOKEN_EQ
-      t.push_back({TOKEN_ASSIGN, "=", line, col});
+      advance();
+      if (pos < sv.length() && sv[pos] == '=') {
+        advance();
+        t.push_back({TOKEN_EQ, "==", start_line, start_col});
+      } else {
+        t.push_back({TOKEN_ASSIGN, "=", start_line, start_col});
+      }
+      break;
+    case '/':
+      advance();
+      t.push_back({TOKEN_SLASH, "/", start_line, start_col});
+      break;
+    default:
+      advance();
+      char bad = sv[pos];
+      // list initialization very cool (C++11)
+      t.push_back({TOKEN_INVALID, std::string{bad}, start_line, start_col});
       break;
     }
   }
 
+  // end of file
+  t.push_back({TOKEN_EOF, "", line, col});
+
   for (const token& tok : t) {
-    std::cout << "{\"type\": " << tok.type << ", \"lex\": \"" << tok.lex << "\", \"line\": " << tok.line << ", \"col\": " << tok.column << "}" << "\n";
+    std::cout << "{\"type\": " << tok.type << ", \"lex\": \"" << tok.lex
+              << "\", \"line\": " << tok.line
+              << ", \"col\": "
+              << tok.column << "}"
+              << "\n";
   }
 }
