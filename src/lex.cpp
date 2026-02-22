@@ -6,7 +6,7 @@
 #include "lex.h"
 #include "types.h"
 
-const std::string source = "5i == 5i;";
+const std::string source = "5i == 5i; true; false;";
 
 
 void read_source()
@@ -60,7 +60,25 @@ void read_source()
       continue;
     }
 
-    // todo: BOOL
+    // dup of isdigit for idents (gotta start with letter)
+    if (std::isalpha(c)) {
+      usize start_pos = pos;
+      u32 start_line = line;
+      u32 start_col = col;
+
+      while (pos < sv.length() && std::isalnum(sv[pos]))
+        advance();
+
+      std::string_view word = sv.substr(start_pos, pos - start_pos);
+
+      if (word == "true" || word == "false")
+        t.push_back({TOKEN_BOOL_LITERAL, word, start_line, start_col});
+      else
+        t.push_back({TOKEN_IDENT, word, start_line, start_col});
+
+      continue;
+    }
+
     u32 start_col = col;
     u32 start_line = line;
     // more manual with advance() but more control
@@ -125,7 +143,7 @@ void read_source()
       t.push_back({TOKEN_SLASH, "/", start_line, start_col});
       break;
     default:
-      advance();
+      // advance(); // fixme: wait im i just skipping over invalid char?
       char bad = sv[pos];
       // list initialization very cool (C++11)
       t.push_back({TOKEN_INVALID, std::string{bad}, start_line, start_col});
@@ -134,7 +152,7 @@ void read_source()
   }
 
   // end of file
-  t.push_back({TOKEN_EOF, "", line, col});
+  t.push_back({TOKEN_EOF, "EOF", line, col});
 
   for (const token& tok : t) {
     std::cout << "{\"type\": " << tok.type << ", \"lex\": \"" << tok.lex
